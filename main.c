@@ -48,7 +48,7 @@ void lci()
 	while(network[0][k] != - 1)
 	{
 		projectId = network[0][k];
-		if(times[projectId-1][2] < es)
+		if(times[projectId-1][2] <= es)
 		{
 			es = times[projectId-1][2];
 			esProject = projectId;
@@ -63,13 +63,14 @@ void lci()
 		while(network[0][k] != - 1)
 		{
 			projectId = network[0][k];
-			if(manning[projectId][mProfile] > hManning)
+			if(manning[projectId-1][mProfile] > hManning)
 			{
 				hManningProj = projectId;
 				hManning = manning[projectId][mProfile];
 			}
 		}
 	}
+	printf("done lci\n");
 }
 
 void buildMap()
@@ -305,6 +306,7 @@ void readFileLine(int option)
 	}
 
 	buildMap();
+	lci();
 
     fclose(fp1);
     fclose(fp2);
