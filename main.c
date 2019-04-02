@@ -39,6 +39,7 @@ void printData(){
 void lci()
 {
 	// network[0][x>1 until network[0][x] == -1] holds projects without predecessor
+	// TODO lci algorithm
 }
 
 void buildMap()
