@@ -42,10 +42,10 @@ void lci()
 	// TODO lci algorithm
 	int k=2;
 	int projectId;
-	int es = 9999,hManning = 9999;
+	int es = 9999,hManning = -1;
 	int esProject,hManningProj;
 	int tie=0;
-	while(network[0][k] != - 1)
+	while(network[k][0] != - 1)
 	{
 		projectId = network[0][k];
 		if(times[projectId-1][2] <= es)
@@ -60,14 +60,15 @@ void lci()
 	k=2;
 	if(tie > 1)
 	{
-		while(network[0][k] != - 1)
+		while(network[k][0] != - 1)
 		{
-			projectId = network[0][k];
+			projectId = network[k][0];
 			if(manning[projectId-1][mProfile] > hManning)
 			{
 				hManningProj = projectId;
 				hManning = manning[projectId][mProfile];
 			}
+			k++;
 		}
 	}
 	printf("done lci\n");
