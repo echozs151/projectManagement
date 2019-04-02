@@ -128,6 +128,18 @@ void readFileLine(int option)
 	INPUT2 = "data\\10_jobs_(network).txt";
 	INPUT3 = "data\\10_jobs_(times).txt";
 
+	if(option == 30)
+	{
+		INPUT1 = "data\\30_jobs_(manning).txt";
+		INPUT2 = "data\\30_jobs_(network).txt";
+		INPUT3 = "data\\30_jobs_(times).txt";
+
+	}else if(option == 60){
+		INPUT1 = "data\\60_jobs_(manning).txt";
+		INPUT2 = "data\\60_jobs_(network).txt";
+		INPUT3 = "data\\60_jobs_(times).txt";
+
+	}
 
 
     fp1 = fopen(INPUT1, "r");
