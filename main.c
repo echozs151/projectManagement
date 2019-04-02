@@ -29,11 +29,61 @@ int setRule;
 int manning[70][70];
 int network[70][70];
 int times[70][70];
+
+int shifts[60][80];
+
 int mProfile = 1;
 Nodeg nodes[70];
 
-void printData(){
-	printf("data");
+void printData(int days,int jobs)
+{
+
+	//printf("\t\tshift 1 \t\tshift 2 \t\tshift 3\n");
+	printf("\n\n");
+	printf("Project\t\n");
+
+	for(int ii=0;ii<3;ii++){
+		if(days > 10){
+		for(int iia=0;iia<days-10;iia++){
+			printf("---");}}
+		printf("-------------------------------------------------shift %i-------------------------------------------",ii+1);
+		if(days > 10){
+		for(int iia=0;iia<days-10;iia++){
+			printf("---");}}
+
+	}
+	printf("\n");
+	for(int k=0;k<3;k++)
+	{
+		printf("\t\t");
+		for(int kk=0;kk<days;kk++)
+		{
+			printf("%i\t",kk+1);
+		}
+		printf("  ");
+
+	}
+	printf("\n");
+	for(int i=0;i<jobs;i++){
+		printf("%i",i+1);
+		printf("\t\t");
+		for(int j=0;j<days*3;j++)
+		{
+			if(j % days == 0 && j != 0 )
+				printf("\t\t");
+			printf("%i\t",shifts[i][j]);
+		}
+		printf("\n");
+	}
+
+}
+
+void setShifts()
+{
+	for(int i=0;i<60;i++){
+		for(int j=0;j<80;j++)
+			shifts[i][j] = 0;
+	}
 }
 
 void lci()
@@ -308,7 +358,8 @@ void readFileLine(int option)
 
 	buildMap();
 	lci();
-
+	setShifts();
+	printData(12,20);
     fclose(fp1);
     fclose(fp2);
     fclose(fp3);
