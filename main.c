@@ -40,6 +40,36 @@ void lci()
 {
 	// network[0][x>1 until network[0][x] == -1] holds projects without predecessor
 	// TODO lci algorithm
+	int k=2;
+	int projectId;
+	int es = 9999,hManning = 9999;
+	int esProject,hManningProj;
+	int tie=0;
+	while(network[0][k] != - 1)
+	{
+		projectId = network[0][k];
+		if(times[projectId-1][2] < es)
+		{
+			es = times[projectId-1][2];
+			esProject = projectId;
+			tie++;
+		}
+
+		k++;
+	}
+	k=2;
+	if(tie > 1)
+	{
+		while(network[0][k] != - 1)
+		{
+			projectId = network[0][k];
+			if(manning[projectId][mProfile] > hManning)
+			{
+				hManningProj = projectId;
+				hManning = manning[projectId][mProfile];
+			}
+		}
+	}
 }
 
 void buildMap()
