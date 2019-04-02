@@ -38,18 +38,21 @@ Nodeg nodes[70];
 void printData(int days,int jobs)
 {
 
+	short placeholders = 0;
 	//printf("\t\tshift 1 \t\tshift 2 \t\tshift 3\n");
 	printf("\n\n");
 	printf("Project\t\n");
-
+	printf("--------------");
 	for(int ii=0;ii<3;ii++){
-		if(days > 10){
-		for(int iia=0;iia<days-10;iia++){
-			printf("---");}}
-		printf("-------------------------------------------------shift %i-------------------------------------------",ii+1);
-		if(days > 10){
-		for(int iia=0;iia<days-10;iia++){
-			printf("---");}}
+		//if(days > 10){
+		for(int iia=0;iia<days;iia++){
+			printf("---");}
+		//printf("-------------------------------------------------shift %i-------------------------------------------",ii+1);
+		printf("-shift %i-",ii+1);
+		//if(days > 10){
+		printf("------");
+		for(int iia=0;iia<days;iia++){
+			printf("-----");}
 
 	}
 	printf("\n");
@@ -71,7 +74,10 @@ void printData(int days,int jobs)
 		{
 			if(j % days == 0 && j != 0 )
 				printf("\t\t");
-			printf("%i\t",shifts[i][j]);
+			if(shifts[i][j] == 0 && placeholders == 0)
+				printf(" \t");
+			else
+				printf("%i\t",shifts[i][j]);
 		}
 		printf("\n");
 	}
