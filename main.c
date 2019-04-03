@@ -92,18 +92,36 @@ void setShifts()
 	}
 }
 
+void assumePeriod(int project,int duration,int manning)
+{
+	for(int i=0;i<duration;i++)
+	{
+		shifts[project-1][i] = manning;
+	}
+}
+
 void lci()
 {
 	// network[0][x>1 until network[0][x] == -1] holds projects without predecessor
 	// TODO lci algorithm
+	int ii=0;
 	int k=2;
 	int projectId;
 	int es = 9999,hManning = -1;
 	int esProject,hManningProj;
+	int nextProject[100];
+	int totalNextProject = 0;
+	int doneProject[100];
+	int totalDoneProject = 0;
 	int tie=0;
-	while(network[k][0] != - 1)
+
+	int totalDuration=0;
+	// Here are all the next nodes of the 1st dummy
+	while(network[0][k] != - 1)
 	{
 		projectId = network[0][k];
+		nextProject[totalNextProject] = projectId;
+		totalNextProject++;
 		if(times[projectId-1][2] <= es)
 		{
 			es = times[projectId-1][2];
@@ -127,6 +145,63 @@ void lci()
 			k++;
 		}
 	}
+
+	for(;;)
+	{
+		if((nextProject[ii] == hManningProj && tie>1) || (nextProject[ii] == esProject && tie<=1))
+		{
+			int tempProject = nextProject[ii];
+			doneProject[totalDoneProject] = tempProject;
+			int networkCount=2;
+			int nextCount=0;
+			while(network[tempProject-1][networkCount] != -1)
+			{
+				int tempNext = network[tempProject-1][networkCount];
+				if(times[tempProject-1][2] != times[tempProject-1][1] +)
+			}
+			nextProject[ii] = 0;
+			totalNextProject--;
+			totalDoneProject++;
+			break;
+		}
+		ii++;
+	}
+	//
+	while(totalNextProject != 0)
+	{
+		k=0;
+		while(network[0][k] != - 1)
+		{
+			projectId = network[0][k];
+			nextProject[totalNextProject] = projectId;
+			totalNextProject++;
+			if(times[projectId-1][2] <= es)
+			{
+				es = times[projectId-1][2];
+				esProject = projectId;
+				tie++;
+			}
+
+			k++;
+		}
+			k=2;
+			if(tie > 1)
+			{
+				while(network[k][0] != - 1)
+				{
+					projectId = network[k][0];
+					if(manning[projectId-1][mProfile] > hManning)
+					{
+						hManningProj = projectId;
+						hManning = manning[projectId][mProfile];
+					}
+					k++;
+				}
+			}
+
+		totalNextProject--;
+	}
+	assumePeriod(1,15,10);
 	printf("done lci\n");
 }
 
@@ -162,7 +237,7 @@ void buildMap()
 			if(k>1)
 				nodes[j].next[k-2] = network[j][k];
 
-			printf("network[%i][%i]:%i \n",j,k,network[j][k]);
+			//printf("network[%i][%i]:%i \n",j,k,network[j][k]);
 			k++;
 		}
 		j++;
@@ -361,11 +436,11 @@ void readFileLine(int option)
 		}
 		lineCount++;
 	}
-
+	setShifts();
 	buildMap();
 	lci();
-	setShifts();
-	printData(12,20);
+
+	printData(10,10);
     fclose(fp1);
     fclose(fp2);
     fclose(fp3);
