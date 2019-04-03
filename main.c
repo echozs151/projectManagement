@@ -11,6 +11,10 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
+#define _D 5
+#define _SHIFT1 1
+#define _SHIFT2 2
+#define _SHIFT3 3
 
 typedef struct
 {
@@ -35,9 +39,9 @@ int shifts[60][80];
 int mProfile = 1;
 Nodeg nodes[70];
 
-void printData(int days,int jobs)
+void printData(int dayss,int jobs)
 {
-
+	int days = _D;
 	short placeholders = 0;
 	//printf("\t\tshift 1 \t\tshift 2 \t\tshift 3\n");
 	printf("\n\n");
@@ -92,12 +96,19 @@ void setShifts()
 	}
 }
 
-void assumePeriod(int project,int duration,int manning)
+int assumePeriod(int project,int duration,int es,int manning)
 {
-	for(int i=0;i<duration;i++)
+
+	int cost=0;
+	int costModifier = _SHIFT1;
+	int trackShift = es;
+	for(int i=es;i<es+duration;i++)
 	{
+
 		shifts[project-1][i] = manning;
+		trackShift++;
 	}
+	return cost;
 }
 
 void lci()
@@ -146,19 +157,14 @@ void lci()
 		}
 	}
 
+	// step 6
 	for(;;)
 	{
+		// step 3
 		if((nextProject[ii] == hManningProj && tie>1) || (nextProject[ii] == esProject && tie<=1))
 		{
-			int tempProject = nextProject[ii];
-			doneProject[totalDoneProject] = tempProject;
-			int networkCount=2;
-			int nextCount=0;
-			while(network[tempProject-1][networkCount] != -1)
-			{
-				int tempNext = network[tempProject-1][networkCount];
-				if(times[tempProject-1][2] != times[tempProject-1][1] +)
-			}
+
+
 			nextProject[ii] = 0;
 			totalNextProject--;
 			totalDoneProject++;
@@ -167,41 +173,8 @@ void lci()
 		ii++;
 	}
 	//
-	while(totalNextProject != 0)
-	{
-		k=0;
-		while(network[0][k] != - 1)
-		{
-			projectId = network[0][k];
-			nextProject[totalNextProject] = projectId;
-			totalNextProject++;
-			if(times[projectId-1][2] <= es)
-			{
-				es = times[projectId-1][2];
-				esProject = projectId;
-				tie++;
-			}
-
-			k++;
-		}
-			k=2;
-			if(tie > 1)
-			{
-				while(network[k][0] != - 1)
-				{
-					projectId = network[k][0];
-					if(manning[projectId-1][mProfile] > hManning)
-					{
-						hManningProj = projectId;
-						hManning = manning[projectId][mProfile];
-					}
-					k++;
-				}
-			}
-
-		totalNextProject--;
-	}
-	assumePeriod(1,15,10);
+	// int project,int duration,int es,int manning
+	assumePeriod(1,15,0,10);
 	printf("done lci\n");
 }
 
