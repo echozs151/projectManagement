@@ -37,7 +37,7 @@ int times[70][70];
 int shifts[60][80];
 
 int mProfile = 1;
-Nodeg nodes[70];
+Nodeg jobs[70];
 
 void printData(int dayss,int jobs)
 {
@@ -125,56 +125,141 @@ void lci()
 	int doneProject[100];
 	int totalDoneProject = 0;
 	int tie=0;
+	int nextProjCount=0;
+	int nextPick = 0;
 
 	int totalDuration=0;
+	// initialize arrays
+	for(int zero=0;zero<100;zero++)
+	{
+		doneProject[zero] = 0;
+		nextProject[zero] = 0;
+	}
+
 	// Here are all the next nodes of the 1st dummy
 	while(network[0][k] != - 1)
 	{
 		projectId = network[0][k];
 		nextProject[totalNextProject] = projectId;
 		totalNextProject++;
-		if(times[projectId-1][2] <= es)
-		{
-			es = times[projectId-1][2];
-			esProject = projectId;
-			tie++;
-		}
-
 		k++;
 	}
-	k=2;
-	if(tie > 1)
-	{
-		while(network[k][0] != - 1)
-		{
-			projectId = network[k][0];
-			if(manning[projectId-1][mProfile] > hManning)
-			{
-				hManningProj = projectId;
-				hManning = manning[projectId][mProfile];
-			}
-			k++;
-		}
-	}
+
+
 
 	// step 6
 	for(;;)
 	{
-		// step 3
-		if((nextProject[ii] == hManningProj && tie>1) || (nextProject[ii] == esProject && tie<=1))
+		k=0;
+		nextProjCount=0;
+		es = 9999;
+		hManning = -1;
+		ii=0;
+		tie=0;
+		while(totalNextProject != nextProjCount )
 		{
+			if(nextProject[k] != 0)
+				nextProjCount++;
+			else
+			{
+				k++;
+				continue;
+			}
+			projectId = nextProject[k];
+			if(times[projectId-1][2] <= es)
+			{
+				if(times[projectId-1][2] == es)
+					tie++;
+				es = times[projectId-1][2];
+				esProject = projectId;
 
+			}
 
+			k++;
+		}
+		nextPick = esProject;
+		nextProjCount=0;
+		k=0;
+		if(tie > 1)
+		{
+			while(totalNextProject != nextProjCount)
+			{
+				if(nextProject[k] != 0)
+					nextProjCount++;
+				else
+				{
+					k++;
+					continue;
+				}
+
+				projectId = nextProject[k];
+				if(manning[projectId-1][mProfile] > hManning)
+				{
+					hManningProj = projectId;
+					hManning = manning[projectId][mProfile];
+				}
+
+				k++;
+			}
+			nextPick = hManningProj;
+		}
+
+		// step 3
+		//if((nextProject[ii] == hManningProj && tie>1) || (nextProject[ii] == esProject && tie<=1))
+
+			int finishedProject = nextPick;
+			while(nextProject[ii] != nextPick)
+				ii++;
 			nextProject[ii] = 0;
 			totalNextProject--;
+
+			doneProject[totalDoneProject] = finishedProject;
 			totalDoneProject++;
-			break;
-		}
-		ii++;
+
+			// check for next job
+			for(int nexti=0;nexti<jobs[finishedProject-1].totalNext;nexti++)
+			{
+
+				int nextJobTemp = jobs[nextPick-1].next[nexti];
+				int countPrevious=0;
+				for(int previ=0;previ<jobs[nextJobTemp-1].totalPrev;previ++)
+				{
+					for(int donei=0;donei<totalDoneProject;donei++)
+					{
+
+						if(jobs[nextJobTemp-1].prev[previ] == doneProject[donei])
+						{
+							countPrevious++;
+							if(countPrevious == jobs[nextJobTemp-1].totalPrev)
+							{
+								for(int emptynext=0;emptynext<100;emptynext++)
+								{
+									if(nextProject[emptynext] == 0)
+									{
+										nextProject[emptynext] = nextJobTemp;
+										totalNextProject++;
+										break;
+									}
+
+								}
+								countPrevious=0;
+							}
+
+						}
+					}
+				}
+
+			}
+
+
+			if(totalNextProject == 0)
+				break;
+
+
 	}
 	//
 	// int project,int duration,int es,int manning
-	assumePeriod(1,15,0,10);
+	//assumePeriod(1,15,0,10);
 	printf("done lci\n");
 }
 
@@ -193,7 +278,7 @@ void buildMap()
 			temp.next[r] = 0;
 			temp.prev[r] = 0;
 		}
-		nodes[i] = temp;
+		jobs[i] = temp;
 	}
 	j=0;k=0;
 	while(network[j][0] != -1)
@@ -201,20 +286,27 @@ void buildMap()
 		k=0;
 		if(network[j][k] != -1)
 		{
-			nodes[j].id = network[j][0];
-			nodes[j].totalNext = network[j][1];
+			jobs[j].id = network[j][0];
+			jobs[j].totalNext = network[j][1];
 		}
 
 		while(network[j][k] != -1)
 		{
 			if(k>1)
-				nodes[j].next[k-2] = network[j][k];
+			{
+				jobs[j].next[k-2] = network[j][k];
+				jobs[network[j][k]-1].prev[jobs[network[j][k]-1].totalPrev] = jobs[j].id;
+				jobs[network[j][k]-1].totalPrev++;
+			}
 
 			//printf("network[%i][%i]:%i \n",j,k,network[j][k]);
 			k++;
 		}
+		if(jobs[j].totalNext == 0)
+			break;
 		j++;
 	}
+	printf("debug");
 
 }
 
@@ -342,9 +434,9 @@ void readFileLine(int option)
 		int i = 0;
 		char *p = strtok (line, " \t");
 		char *array[20];
-
+		int lengthNet=0;
 		char *lineStore = &line;
-		//Manning
+		// Network
 		if(lineCount>=1)
 		{
 			//printf("%s	%s", array[0],array);
@@ -360,13 +452,14 @@ void readFileLine(int option)
 			{
 				for(int i=0;i<10;i++)
 				{
-					network[lineCount-5][i] = atoi(array[i]);
-					if(atoi(array[i]) == NULL)
+					if(lengthNet <= atoi(array[1])+1)
+						network[lineCount-5][i] = atoi(array[i]);
+					if(lengthNet > atoi(array[1])+1 )
 					{
 						network[lineCount-5][i] = -1;
 						break;
 					}
-
+					lengthNet++;
 				}
 			}
 
