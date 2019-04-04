@@ -11,7 +11,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
-#define _D 5
+#define _D 10
 #define _SHIFT1 1
 #define _SHIFT2 2
 #define _SHIFT3 3
@@ -23,6 +23,7 @@ typedef struct
     int prev[100];
     int totalPrev;
     int id;
+    int cost;
 
 } Nodeg;
 
@@ -35,6 +36,11 @@ int network[70][70];
 int times[70][70];
 
 int shifts[60][80];
+
+int doneProject[100];
+int nextProject[100];
+int totalNextProject = 0;
+int totalDoneProject = 0;
 
 int mProfile = 1;
 Nodeg jobs[70];
@@ -98,14 +104,39 @@ void setShifts()
 
 int assumePeriod(int project,int duration,int es,int manning)
 {
+	// make choice.
+
 
 	int cost=0;
 	int costModifier = _SHIFT1;
 	int trackShift = es;
+	for(int i=0;i<0+duration;i++)
+	{
+		if(i>_D)
+			costModifier = _SHIFT2;
+		if(i>_D*2)
+			costModifier = _SHIFT3;
+
+		shifts[project-2][i] = manning;
+		trackShift++;
+
+	}
+	printf("cost mod: $%i",costModifier);
+	return cost;
+}
+
+
+int assumePeriod1(int project,int duration,int es,int manning)
+{
+
+	int cost=0;
+	int costModifier = _SHIFT1;
+	int trackShift = es;
+
 	for(int i=es;i<es+duration;i++)
 	{
 
-		shifts[project-1][i] = manning;
+		shifts[project-2][i] = manning;
 		trackShift++;
 	}
 	return cost;
@@ -120,10 +151,8 @@ void lci()
 	int projectId;
 	int es = 9999,hManning = -1;
 	int esProject,hManningProj;
-	int nextProject[100];
-	int totalNextProject = 0;
-	int doneProject[100];
-	int totalDoneProject = 0;
+
+
 	int tie=0;
 	int nextProjCount=0;
 	int nextPick = 0;
@@ -208,6 +237,9 @@ void lci()
 		//if((nextProject[ii] == hManningProj && tie>1) || (nextProject[ii] == esProject && tie<=1))
 
 			int finishedProject = nextPick;
+			// Assign project into shifts
+			assumePeriod(nextPick,times[nextPick-1][1],times[nextPick][2],manning[nextPick-1][mProfile]);
+
 			while(nextProject[ii] != nextPick)
 				ii++;
 			nextProject[ii] = 0;
@@ -219,14 +251,12 @@ void lci()
 			// check for next job
 			for(int nexti=0;nexti<jobs[finishedProject-1].totalNext;nexti++)
 			{
-
 				int nextJobTemp = jobs[nextPick-1].next[nexti];
 				int countPrevious=0;
 				for(int previ=0;previ<jobs[nextJobTemp-1].totalPrev;previ++)
 				{
 					for(int donei=0;donei<totalDoneProject;donei++)
 					{
-
 						if(jobs[nextJobTemp-1].prev[previ] == doneProject[donei])
 						{
 							countPrevious++;
@@ -240,26 +270,19 @@ void lci()
 										totalNextProject++;
 										break;
 									}
-
 								}
 								countPrevious=0;
 							}
-
 						}
 					}
 				}
-
 			}
-
-
 			if(totalNextProject == 0)
 				break;
-
-
 	}
 	//
 	// int project,int duration,int es,int manning
-	//assumePeriod(1,15,0,10);
+	//
 	printf("done lci\n");
 }
 
@@ -273,6 +296,7 @@ void buildMap()
 		temp.id = 0;
 		temp.totalNext = 0;
 		temp.totalPrev = 0;
+		temp.cost = 0;
 		for(int r=0;r<100;r++)
 		{
 			temp.next[r] = 0;
@@ -306,7 +330,7 @@ void buildMap()
 			break;
 		j++;
 	}
-	printf("debug");
+
 
 }
 
@@ -384,52 +408,14 @@ void readFileLine(int option)
 
 						}
                     }
-                    //printf("\n");
-                    //printf("%s %\n",array[0]);
-                    //char graphDirectory[100] = "data\\precedence graphs\\";
-                    //strupr(array[0]);
-                    //char graphName[40];// = array[0];
-                    //strcpy(graphName,array[0]);
-                    //strcat(graphName,".IN2");
-                    //strcat(graphDirectory,graphName);
-
-                    //char *graphDirectory = strcat(,graphName);
-                    //printf("%s\n",graphDirectory); // Prints the path of the graph data
-                    //printf("%s ",array[0]);
-
-
-
-
-
-					//printf("\t%i\t %i\t",atoi(array[1]),atoi(array[2]));
-
-                        //exit(EXIT_FAILURE);
-
-                    //char *array2[800];
-
-                    //double totalNodes = atoi(array2[0]);
-
-                    //printf("%s	%s", array[0],array);
-                    //printf("before alpbe");
-                    //alpbe(atoi(array[1]),atoi(array[2]),array2);
-
-
 
                 }
 
-            //char *precedenceGraphName = array[0];
-
         lineCount++;
-        //read only 5 lines for debug
-        /*if(lineCount>5)
-            break;*/
     }
 
     lineCount = 0;
     while ((read = getline(&line, &len, fp2)) != -1) {
-		//printf("Retrieved line of length %zu:\n", read);
-		//if(lineCount>=1)
-		//printf("%s",line);
 		printf("%s",line);
 		int i = 0;
 		char *p = strtok (line, " \t");
@@ -506,7 +492,7 @@ void readFileLine(int option)
 	buildMap();
 	lci();
 
-	printData(10,10);
+	printData(_D,10);
     fclose(fp1);
     fclose(fp2);
     fclose(fp3);
