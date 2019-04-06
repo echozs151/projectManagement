@@ -11,7 +11,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
-#define _D 10
+#define _D 11
 #define _SHIFT1 1
 #define _SHIFT2 2
 #define _SHIFT3 3
@@ -24,20 +24,26 @@ typedef struct
     int totalPrev;
     int id;
     int cost;
+    short status; // -1 not started,0 working, X day finished
 
 } Nodeg;
 
 
 char *INPUT1 = NULL,*INPUT2 = NULL,*INPUT3 = NULL;//"C:\\Users\\ECHOZS\\Desktop\\data\\bin\\ProjMng_Project\\data\\10_jobs_(manning).txt";
 int setRule;
+int assignedStaff[_D][3];
+int freeStaff[_D][3];
+
+int shiftCost[3];
 
 int manning[70][70];
 int network[70][70];
 int times[70][70];
 
-int shifts[60][80];
+int shifts[60][3*_D];
 
 int doneProject[100];
+
 int nextProject[100];
 int totalNextProject = 0;
 int totalDoneProject = 0;
@@ -100,28 +106,185 @@ void setShifts()
 		for(int j=0;j<80;j++)
 			shifts[i][j] = 0;
 	}
+	for(int i=0;i<3;i++)
+	{
+		shiftCost[i] = 0;
+	}
 }
 
-int assumePeriod(int project,int duration,int es,int manning)
+int assumePeriod(int project,int duration,int start,int manning)
+{
+	// find empty period.
+	// if no available period then...
+	// 		sum the cost of all 3 shifts. min(Sum(manning*shift_cost))
+	//		compare which has lowest cost when bring new staff.
+	//		bring new staff for min shift
+	//		include cost to final cost
+	//assign staff to period.
+	if(project==1 || project==12 || project == 32 || project == 62)
+		return 0;
+
+	int k=0;
+	int s,d;
+	int j,jj,shiftj=0,shift;
+	short free;
+	int costSum[3];
+
+
+	while(k < duration)
+	{
+		free =0;
+		j = k-1+start;
+		jj = k+start;
+
+		if(j > _D)
+		{
+			shiftj++;
+			j=0;
+		}
+		if( jj <= _D)
+			shift = 1;
+		else if(jj > _D && jj <= _D*2)
+			shift = 2;
+		else if(jj > 2*_D && jj <= 3*_D)
+			shift = 3;
+
+
+		for(d=0;d<_D;d++) // iterate through days
+		{
+			for(s=0;s<3;s++) // iterate through periods
+			{
+				if(freeStaff[d][s] > 0)//if(freeStaff[d][p] > 0)
+				{
+					free = 1;
+					printf("Assigned free staff p: %i d: %i\n",s,d);
+					break;
+				}
+			}
+			if(free == 1)
+			{
+				printf("p: %i d: %i\n",s,d);
+				freeStaff[d][s] -= manning;
+				assignedStaff[d][s] += manning;
+				shifts[project-2][d*(s+1)] = manning;
+
+				break;
+			}
+
+		}
+		if(free == 0)
+		{
+			// bring new staff
+			// implement all after *if no available period*
+
+			// find shift with the lowest cost before bringing new staff
+			int minCostShift= 9999;
+			int minShift;
+			int tempCost;
+			for(s=0;s<3;s++)
+			{
+				tempCost = (s+1)*manning;
+				if((shiftCost[s]+tempCost) <  minCostShift){
+					minCostShift = shiftCost[s]+tempCost;
+					minShift = s;
+				}
+			}
+			//bring new staff
+			for(int ns=0;ns<_D;ns++)
+			{
+				freeStaff[ns][minShift] += manning;
+			}
+			//shifts[project-2][minShift] = manning;
+			shiftCost[minShift] += minCostShift;
+			k--; // reverts the following k++ to take effect the newly brought staff into a shift
+		}
+
+
+		printf("k: %i p: %i d: %i\n",k,s,d);
+		k++;
+		j++;
+	}
+	printf("Final : p: %i d: %i\n",s,d);
+	return 0;
+}
+
+int assumePeriod2(int project,int duration,int start,int manning)
 {
 	// make choice.
-
-
+	int i,j;
+	int k;
+	int shift,shiftj = 1;
+	int minCost = 9999;
+	int minp;
 	int cost=0;
 	int costModifier = _SHIFT1;
-	int trackShift = es;
-	for(int i=0;i<0+duration;i++)
-	{
-		if(i>_D)
-			costModifier = _SHIFT2;
-		if(i>_D*2)
-			costModifier = _SHIFT3;
+	int trackShift = start;
+	if(project==1 || project==12 || project == 32 || project == 62)
+		return 0;
+	// reserve earliest available period.
 
-		shifts[project-2][i] = manning;
+
+
+
+	/*for(i=1;i<=duration;i++)
+	{
+		if( i <= _D)
+				shift = 1;
+			else if(i > _D && i <= _D*2)
+				shift = 2;
+			else if(i > 2*_D && i <= 3*_D)
+				shift = 3;
+	}*/
+
+	i=1;
+	while(i<=duration)
+	{
+		k = i+start;
+		j = i-1+start;
+		if(j > _D)
+		{
+			shiftj++;
+			j=0;
+		}
+		if( k <= _D)
+			shift = 1;
+		else if(k > _D && k <= _D*2)
+			shift = 2;
+		else if(k > 2*_D && k <= 3*_D)
+			shift = 3;
+
+		if(freeStaff[i-1][shift-1] == 0)
+		{
+			for(int j=0;j<_D;j++)
+			{
+				if(shift == 1)
+					costModifier = _SHIFT1;
+				else if(shift == 2)
+					costModifier = _SHIFT2;
+				else if(shift == 3)
+					costModifier = _SHIFT3;
+				freeStaff[j][shift-1] += manning;
+
+			}
+			cost += manning * shift;
+		}
+
+
+		shifts[project-2][start+i-1] = manning;
+
+		freeStaff[j][shiftj-1] -= manning;
+
+		assignedStaff[i-1][shift-1] += manning;
 		trackShift++;
 
+		i++;
+		j++;
 	}
-	printf("cost mod: $%i",costModifier);
+
+
+
+	jobs[project-1].status = k;
+	printf("cost mod: $%i\n",costModifier);
 	return cost;
 }
 
@@ -146,13 +309,14 @@ void lci()
 {
 	// network[0][x>1 until network[0][x] == -1] holds projects without predecessor
 	// TODO lci algorithm
+
 	int ii=0;
 	int k=2;
 	int projectId;
 	int es = 9999,hManning = -1;
 	int esProject,hManningProj;
 
-
+	int totalCost=0;
 	int tie=0;
 	int nextProjCount=0;
 	int nextPick = 0;
@@ -236,54 +400,65 @@ void lci()
 		// step 3
 		//if((nextProject[ii] == hManningProj && tie>1) || (nextProject[ii] == esProject && tie<=1))
 
-			int finishedProject = nextPick;
-			// Assign project into shifts
-			assumePeriod(nextPick,times[nextPick-1][1],times[nextPick][2],manning[nextPick-1][mProfile]);
+		int finishedProject = nextPick;
 
-			while(nextProject[ii] != nextPick)
-				ii++;
-			nextProject[ii] = 0;
-			totalNextProject--;
 
-			doneProject[totalDoneProject] = finishedProject;
-			totalDoneProject++;
 
-			// check for next job
-			for(int nexti=0;nexti<jobs[finishedProject-1].totalNext;nexti++)
+		// Assign project into shifts
+		totalCost = assumePeriod(nextPick,times[nextPick-1][1],times[nextPick-1][2],manning[nextPick-1][mProfile]);
+
+
+
+
+
+		while(nextProject[ii] != nextPick)
+			ii++;
+		nextProject[ii] = 0;
+		totalNextProject--;
+
+		doneProject[totalDoneProject] = finishedProject;
+		totalDoneProject++;
+
+		// check for next job
+		for(int nexti=0;nexti<jobs[finishedProject-1].totalNext;nexti++)
+		{
+			int nextJobTemp = jobs[nextPick-1].next[nexti];
+			int countPrevious=0;
+			for(int previ=0;previ<jobs[nextJobTemp-1].totalPrev;previ++)
 			{
-				int nextJobTemp = jobs[nextPick-1].next[nexti];
-				int countPrevious=0;
-				for(int previ=0;previ<jobs[nextJobTemp-1].totalPrev;previ++)
+				for(int donei=0;donei<totalDoneProject;donei++)
 				{
-					for(int donei=0;donei<totalDoneProject;donei++)
+					if(jobs[nextJobTemp-1].prev[previ] == doneProject[donei])
 					{
-						if(jobs[nextJobTemp-1].prev[previ] == doneProject[donei])
+						countPrevious++;
+						if(countPrevious == jobs[nextJobTemp-1].totalPrev)
 						{
-							countPrevious++;
-							if(countPrevious == jobs[nextJobTemp-1].totalPrev)
+							for(int emptynext=0;emptynext<100;emptynext++)
 							{
-								for(int emptynext=0;emptynext<100;emptynext++)
+								if(nextProject[emptynext] == 0)
 								{
-									if(nextProject[emptynext] == 0)
-									{
-										nextProject[emptynext] = nextJobTemp;
-										totalNextProject++;
-										break;
-									}
+									nextProject[emptynext] = nextJobTemp;
+									totalNextProject++;
+									break;
 								}
-								countPrevious=0;
 							}
+							countPrevious=0;
 						}
 					}
 				}
 			}
-			if(totalNextProject == 0)
-				break;
+		}
+		if(totalNextProject == 0)
+			break;
 	}
 	//
 	// int project,int duration,int es,int manning
 	//
-	printf("done lci\n");
+	printf("done lci..\n");
+	for(int printShift=0;printShift<3;printShift++)
+	{
+		printf("Shift %i Cost: %i\n",printShift+1,shiftCost[printShift]);
+	}
 }
 
 void buildMap()
@@ -297,6 +472,7 @@ void buildMap()
 		temp.totalNext = 0;
 		temp.totalPrev = 0;
 		temp.cost = 0;
+		temp.status = -1;
 		for(int r=0;r<100;r++)
 		{
 			temp.next[r] = 0;
@@ -304,6 +480,18 @@ void buildMap()
 		}
 		jobs[i] = temp;
 	}
+	for(int i=0;i<_D;i++)
+	{
+		assignedStaff[i][0] = 0;
+		assignedStaff[i][1] = 0;
+		assignedStaff[i][2] = 0;
+	}
+	for(int s=0;s<3;s++)
+		{
+		for(int i=0;i<_D;i++){
+			freeStaff[i][s] = 0;
+
+		}}
 	j=0;k=0;
 	while(network[j][0] != -1)
 	{
@@ -513,7 +701,7 @@ int main()
     for(;;)
     {
 
-        int opt;
+        int opt=0;
 
         //scanf("%d",&opt);
         //setRule = opt;
