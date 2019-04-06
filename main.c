@@ -11,8 +11,8 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
-#define _D 26
-#define TOTAL_JOBS 10
+//#define _D 26
+//#define TOTAL_JOBS 10
 #define _SHIFT1 1
 #define _SHIFT2 2
 #define _SHIFT3 3
@@ -32,16 +32,17 @@ typedef struct
 
 char *INPUT1 = NULL,*INPUT2 = NULL,*INPUT3 = NULL;//"C:\\Users\\ECHOZS\\Desktop\\data\\bin\\ProjMng_Project\\data\\10_jobs_(manning).txt";
 int setRule;
-int assignedStaff[_D][3];
-int freeStaff[_D][3];
+int assignedStaff[100][3];
+int freeStaff[100][3];
 
 int shiftCost[3];
-
+int _D = 26;
+int TOTAL_JOBS = 10;
 int manning[70][70];
 int network[70][70];
 int times[70][70];
 
-int shifts[60][3*_D];
+int shifts[60][300];
 
 int doneProject[100];
 
@@ -49,7 +50,7 @@ int nextProject[100];
 int totalNextProject = 0;
 int totalDoneProject = 0;
 
-int mProfile = 2;
+int mProfile = 1;
 Nodeg jobs[70];
 
 void printData(int dayss,int jobs)
@@ -204,7 +205,7 @@ int assumePeriod(int project,int duration,int manning)
 				continue;*/
 			for(d=0;d<_D;d++) // iterate through periods
 			{
-				if(freeStaff[d][s] > manning && s>=earliestShift && d*(s+1)>=earliestDay)//if(freeStaff[d][p] > 0)
+				if(freeStaff[d][s] >= manning && s>=earliestShift && d*(s+1)>=earliestDay)//if(freeStaff[d][p] > 0)
 				{
 					free = 1;
 					printf("Assigned free staff p: %i d: %i\n",s,d);
@@ -765,16 +766,24 @@ int main()
 {
 
 	setbuf(stdout, NULL);
-	printf("1. LTT\n2. STT\n3. MFT\n4. LFT\n");
-	printf( "Option :");
+	//printf("1. LTT\n2. STT\n3. MFT\n4. LFT\n");
+
     for(;;)
     {
 
         int opt=0;
+        printf( "Set Deadline :");
+        scanf("%d",&opt);
+        _D = opt;
+    	printf( "Set Total Jobs :");
 
-        //scanf("%d",&opt);
-        //setRule = opt;
+        scanf("%d",&opt);
+        TOTAL_JOBS = opt;
 
+        printf( "Set Manning Profile(1-10) :");
+        scanf("%d",&opt);
+
+        mProfile = opt;
         readFileLine(opt);
         getchar();
 
