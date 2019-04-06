@@ -11,7 +11,8 @@
 #include <errno.h>
 #include <unistd.h>
 #include <string.h>
-#define _D 11
+#define _D 26
+#define TOTAL_JOBS 10
 #define _SHIFT1 1
 #define _SHIFT2 2
 #define _SHIFT3 3
@@ -48,7 +49,7 @@ int nextProject[100];
 int totalNextProject = 0;
 int totalDoneProject = 0;
 
-int mProfile = 1;
+int mProfile = 2;
 Nodeg jobs[70];
 
 void printData(int dayss,int jobs)
@@ -112,7 +113,7 @@ void setShifts()
 	}
 }
 
-int assumePeriod(int project,int duration,int start,int manning)
+int assumePeriod(int project,int duration,int manning)
 {
 	// find empty period.
 	// if no available period then...
@@ -124,18 +125,56 @@ int assumePeriod(int project,int duration,int start,int manning)
 	if(project==1 || project==12 || project == 32 || project == 62)
 		return 0;
 
+
 	int k=0;
 	int s,d;
 	int j,jj,shiftj=0,shift;
+	short soon=0;
 	short free;
+	short clearPrecedence = 0;
 	int costSum[3];
+	int lastDay = 0;
+	int totalPrevious=0;
+	int earliestShift = 0,earliestDay = 0;
+	int previousFinish[20];
+	for(int reset=0;reset<20;reset++)
+	{
+		previousFinish[reset] = 0;
+	}
+	for(int prev=0;prev<jobs[project-1].totalPrev;prev++)
+	{
+		if(jobs[project-1].prev[prev] == 1)
+		{
+			clearPrecedence = 1;
+			earliestDay = 0;
+			earliestShift = 0;
+			break;
+		}
 
+
+		previousFinish[prev] = jobs[(jobs[project-1].prev[prev])-1].status;
+		if(earliestDay <= jobs[(jobs[project-1].prev[prev])-1].status)
+		{
+			earliestDay = jobs[(jobs[project-1].prev[prev])-1].status;
+			//earliestDay = earliestDay*(earliestShift+1);
+		}
+		if(earliestShift <= floor(jobs[(jobs[project-1].prev[prev])-1].status / _D))
+		{
+			earliestShift = floor(jobs[(jobs[project-1].prev[prev])-1].status / _D);
+		}
+
+		totalPrevious++;
+	}
+
+	if(earliestDay + duration > _D*3)
+		return -10;
 
 	while(k < duration)
 	{
+		soon = 0;
 		free =0;
-		j = k-1+start;
-		jj = k+start;
+		j = k-1+times[project-1][2];
+		jj = k+times[project-1][2];
 
 		if(j > _D)
 		{
@@ -150,11 +189,22 @@ int assumePeriod(int project,int duration,int start,int manning)
 			shift = 3;
 
 
-		for(d=0;d<_D;d++) // iterate through days
+
+		for(s=0;s<3;s++) // iterate through days
 		{
-			for(s=0;s<3;s++) // iterate through periods
+			/*for(int prev=0;prev<jobs[project-1].totalPrev;prev++){
+
+				if(previousFinish[prev] < d)
+				{
+					soon++;
+				}
+			}
+
+			if(soon > 0 && clearPrecedence == 0)
+				continue;*/
+			for(d=0;d<_D;d++) // iterate through periods
 			{
-				if(freeStaff[d][s] > 0)//if(freeStaff[d][p] > 0)
+				if(freeStaff[d][s] > manning && s>=earliestShift && d*(s+1)>=earliestDay)//if(freeStaff[d][p] > 0)
 				{
 					free = 1;
 					printf("Assigned free staff p: %i d: %i\n",s,d);
@@ -166,8 +216,9 @@ int assumePeriod(int project,int duration,int start,int manning)
 				printf("p: %i d: %i\n",s,d);
 				freeStaff[d][s] -= manning;
 				assignedStaff[d][s] += manning;
-				shifts[project-2][d*(s+1)] = manning;
-
+				shifts[project-1][d*(s+1)] = manning;
+				if(d*(s+1)>lastDay)
+					lastDay = d*(s+1);
 				break;
 			}
 
@@ -198,9 +249,10 @@ int assumePeriod(int project,int duration,int start,int manning)
 			shiftCost[minShift] += minCostShift;
 			k--; // reverts the following k++ to take effect the newly brought staff into a shift
 		}
+		jobs[project-1].status = lastDay;
 
 
-		printf("k: %i p: %i d: %i\n",k,s,d);
+		printf("Project: %i k: %i p: %i d: %i\n",project,k,s,d);
 		k++;
 		j++;
 	}
@@ -309,7 +361,8 @@ void lci()
 {
 	// network[0][x>1 until network[0][x] == -1] holds projects without predecessor
 	// TODO lci algorithm
-
+	int error = 0;
+	int errorProject;
 	int ii=0;
 	int k=2;
 	int projectId;
@@ -405,9 +458,15 @@ void lci()
 
 
 		// Assign project into shifts
-		totalCost = assumePeriod(nextPick,times[nextPick-1][1],times[nextPick-1][2],manning[nextPick-1][mProfile]);
+		totalCost = assumePeriod(nextPick,times[nextPick-1][1],manning[nextPick-1][mProfile]);
 
+		if(totalCost == -10)
+		{
+			error = totalCost;
+			errorProject = nextPick;
+			break;
 
+		}
 
 
 
@@ -454,6 +513,8 @@ void lci()
 	//
 	// int project,int duration,int es,int manning
 	//
+	if(error == -10)
+		printf("\n***Project: %i Could not be scheduled***\n",errorProject);
 	printf("done lci..\n");
 	for(int printShift=0;printShift<3;printShift++)
 	{
@@ -677,10 +738,18 @@ void readFileLine(int option)
 		lineCount++;
 	}
 	setShifts();
-	buildMap();
-	lci();
+	//if(_D*3 >= times[TOTAL_JOBS+1][2])
 
-	printData(_D,10);
+		buildMap();
+		lci();
+
+		printData(_D,10+2);
+
+
+
+	//	printf("Cannot fit workload..Increase Shifts or Deadline\n");
+
+
     fclose(fp1);
     fclose(fp2);
     fclose(fp3);
